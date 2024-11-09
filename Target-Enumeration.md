@@ -1,6 +1,6 @@
 ### Password Mining -
 #### Linux
-- Reference - [Linux Password Mining]([https://medium.com/@tinopreter/linux-password-mining-58e341635f1c](https://medium.com/@tinopreter/linux-password-mining-58e341635f1c))
+- Reference - [Linux Password Mining](https://medium.com/@tinopreter/linux-password-mining-58e341635f1c)
 - `ls /home/<user>/.ssh/`
 	- By default, SSH searches for `id_rsa, id_ecdsa, id_ecdsa_sk, id_ed25519, id_ed25519_sk, and id_dsa` files. - [Reference](https://askubuntu.com/questions/30788/does-ssh-key-need-to-be-named-id-rsa)
 - Search password in other files
@@ -13,7 +13,7 @@
     - Sticky bit files - `find / -perm 1777 -type f 2>/dev/null`
 - Extract password from memory
 #### Windows
-- Reference - [Windows Password Mining]([https://medium.com/@tinopreter/windows-password-mining-3a72205673ff](https://medium.com/@tinopreter/windows-password-mining-3a72205673ff))
+- Reference - [Windows Password Mining](https://medium.com/@tinopreter/windows-password-mining-3a72205673ff)
 - Search for file containing pass string
 	- `findstr /si /m "pass" *.xml *.ini *.conf *.txt *.log *.bak`
 - Search for files
@@ -98,11 +98,11 @@
     - `PS> Get-Process -ErrorAction SilentlyContinue | Watch-Command -Diff -Cont -Verbose -Seconds 30` → Perform watch every 30 seconds on enumerating process
     - `PS> Get-Process backup -ErrorAction SilentlyContinue | Watch-Command -Diff -Cont -Verbose` → Perform watch on enumerating process and filter with backup processes
 - winPEAS - Automated Windows Enumeration - [winPEAS](https://github.com/peass-ng/PEASS-ng/tree/master/winPEAS)
-- Seatbelt - [Seatbelt Package]([https://github.com/GhostPack/Seatbelt](https://github.com/GhostPack/Seatbelt))
+- Seatbelt - [Seatbelt Package](https://github.com/GhostPack/Seatbelt)
 	- Seatbelt.exe → kinda similar to winPEAS, but more advanced (specifically for AD)
     - Reference - [Video](https://www.youtube.com/watch?v=8KJebvmd1Fk&t=1185s)
     - Build
-	    - Go to Windows and clone seatbelt from - [https://github.com/GhostPack/Seatbelt](https://github.com/GhostPack/Seatbelt)
+	    - Go to Windows and clone seatbelt from - [Seatbelt](https://github.com/GhostPack/Seatbelt)
         - Open Seatbelt.sln with Visual Studio
         - Change Debug dropdown in menu to Release
         - Select Build Solution from Build menu to get Seatbelt.exe
