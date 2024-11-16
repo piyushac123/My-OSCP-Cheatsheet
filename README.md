@@ -4,3 +4,4 @@
 - [Target Enumeration](Target-Enumeration.md)
 - [Privilege Escalation](Privilege-Escalation.md)
 - [File Transfer](File-Transfer.md)
+- [Get Reverse Shell](Get-Reverse-Shell.md)
