@@ -4,6 +4,7 @@
 - [Target Enumeration](Target-Enumeration.md)
 - [Privilege Escalation](Privilege-Escalation.md)
 - [Active Directory](Active-Directory.md)
+- [Port Forwarding](Port-Forwarding.md)
 - [File Transfer](File-Transfer.md)
 - [Get Reverse Shell](Get-Reverse-Shell.md)
 ### My Favourite Practice Problems
